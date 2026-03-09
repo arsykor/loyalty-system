@@ -99,6 +99,7 @@ func WithGzipDecompression(next http.Handler) http.Handler {
 		defer gz.Close()
 
 		r.Body = io.NopCloser(gz)
+
 		next.ServeHTTP(w, r)
 	})
 }
