@@ -12,10 +12,11 @@ import (
 
 type contextKey string
 
+const UserIDKey contextKey = "userID"
+
 const (
-	UserIDKey  contextKey = "userID"
-	cookieName            = "loyalty_token"
-	secretKey             = "super-secret-key"
+	cookieName = "loyalty_token"
+	secretKey  = "super-secret-key"
 )
 
 var (
