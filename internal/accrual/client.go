@@ -7,11 +7,14 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/arsykor/loyalty-system/internal/service"
 	"go.uber.org/zap"
 )
+
+const maxConcurrent = 5
 
 type accrualResponse struct {
 	Order   string   `json:"order"`
@@ -24,6 +27,8 @@ type Worker struct {
 	svc     *service.Service
 	client  *http.Client
 	logger  *zap.SugaredLogger
+	// sem limits the number of concurrent requests to the accrual service
+	sem chan struct{}
 }
 
 func NewWorker(baseURL string, svc *service.Service, logger *zap.SugaredLogger) *Worker {
@@ -36,6 +41,7 @@ func NewWorker(baseURL string, svc *service.Service, logger *zap.SugaredLogger) 
 		svc:     svc,
 		client:  &http.Client{Timeout: 10 * time.Second},
 		logger:  logger,
+		sem:     make(chan struct{}, maxConcurrent),
 	}
 }
 
@@ -61,11 +67,20 @@ func (w *Worker) poll(ctx context.Context) {
 		return
 	}
 
+	var wg sync.WaitGroup
 	for _, number := range numbers {
-		if err := w.processOrder(ctx, number); err != nil {
-			w.logger.Errorw("accrual: failed to process order", "number", number, "error", err)
-		}
+		wg.Add(1)
+		// Acquire semaphore slot before launching goroutine
+		w.sem <- struct{}{}
+		go func(n string) {
+			defer wg.Done()
+			defer func() { <-w.sem }() // Release slot when done
+			if err := w.processOrder(ctx, n); err != nil {
+				w.logger.Errorw("accrual: failed to process order", "number", n, "error", err)
+			}
+		}(number)
 	}
+	wg.Wait()
 }
 
 func (w *Worker) processOrder(ctx context.Context, number string) error {
