@@ -96,7 +96,10 @@ func TestSetAuthCookie(t *testing.T) {
 	w := httptest.NewRecorder()
 	SetAuthCookie(w, userID)
 
-	cookies := w.Result().Cookies()
+	resp := w.Result()
+	defer resp.Body.Close()
+
+	cookies := resp.Cookies()
 	require.Len(t, cookies, 1)
 	assert.Equal(t, cookieName, cookies[0].Name)
 

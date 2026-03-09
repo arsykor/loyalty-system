@@ -149,7 +149,9 @@ func newRouter(repo *mockRepo) http.Handler {
 func authCookie(userID string) *http.Cookie {
 	w := httptest.NewRecorder()
 	middleware.SetAuthCookie(w, userID)
-	return w.Result().Cookies()[0]
+	resp := w.Result()
+	defer resp.Body.Close()
+	return resp.Cookies()[0]
 }
 
 // bcryptHash hashes a password using bcrypt MinCost (fast in tests).
@@ -210,7 +212,9 @@ func TestHandleRegister(t *testing.T) {
 			assert.Equal(t, tt.wantCode, w.Code)
 			if tt.wantCode == http.StatusOK {
 				// Auth cookie must be set on success
-				assert.NotEmpty(t, w.Result().Cookies())
+				resp := w.Result()
+				defer resp.Body.Close()
+				assert.NotEmpty(t, resp.Cookies())
 			}
 		})
 	}
