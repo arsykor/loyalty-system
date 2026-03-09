@@ -63,30 +63,6 @@ func parseCookieValue(cookieValue string) string {
 	return ""
 }
 
-// WithAuth sets a signed cookie if none exists. Does NOT enforce auth.
-//func WithAuth(next http.Handler) http.Handler {
-//	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//		var userID string
-//
-//		cookie, err := r.Cookie(cookieName)
-//		if err == nil {
-//			userID = parseCookieValue(cookie.Value)
-//		}
-//
-//		if userID == "" {
-//			userID = uuid.New().String()
-//			http.SetCookie(w, &http.Cookie{
-//				Name:  cookieName,
-//				Value: buildCookieValue(userID),
-//				Path:  "/",
-//			})
-//		}
-//
-//		ctx := context.WithValue(r.Context(), UserIDKey, userID)
-//		next.ServeHTTP(w, r.WithContext(ctx))
-//	})
-//}
-
 // RequireAuth is a middleware that enforces authentication, returning 401 if no valid cookie.
 func RequireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
