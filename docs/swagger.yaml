@@ -1,0 +1,235 @@
+basePath: /
+definitions:
+  internal_handler.balanceResponse:
+    properties:
+      current:
+        type: number
+      withdrawn:
+        type: number
+    type: object
+  internal_handler.loginRequest:
+    properties:
+      login:
+        type: string
+      password:
+        type: string
+    type: object
+  internal_handler.orderResponse:
+    properties:
+      accrual:
+        type: number
+      number:
+        type: string
+      status:
+        type: string
+      uploaded_at:
+        type: string
+    type: object
+  internal_handler.withdrawRequest:
+    properties:
+      order:
+        type: string
+      sum:
+        type: number
+    type: object
+  internal_handler.withdrawalResponse:
+    properties:
+      order:
+        type: string
+      processed_at:
+        type: string
+      sum:
+        type: number
+    type: object
+host: localhost:8086
+info:
+  contact: {}
+  description: 'Loyalty accumulation system: register, submit orders, earn and spend
+    points.'
+  title: Gophermart Loyalty System
+  version: "1.0"
+paths:
+  /api/user/balance:
+    get:
+      description: Returns the current balance and total withdrawn amount for the
+        authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.balanceResponse'
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal error
+      security:
+      - CookieAuth: []
+      summary: Get balance
+      tags:
+      - balance
+  /api/user/balance/withdraw:
+    post:
+      consumes:
+      - application/json
+      description: Deduct loyalty points from the user's balance for a given order
+        number
+      parameters:
+      - description: Withdrawal details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.withdrawRequest'
+      responses:
+        "200":
+          description: Withdrawal successful
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "402":
+          description: Insufficient funds
+        "422":
+          description: Invalid order number
+        "500":
+          description: Internal error
+      security:
+      - CookieAuth: []
+      summary: Withdraw points
+      tags:
+      - balance
+  /api/user/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate with login/password, sets an auth cookie on success
+      parameters:
+      - description: Credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.loginRequest'
+      responses:
+        "200":
+          description: Authenticated
+        "400":
+          description: Bad request
+        "401":
+          description: Invalid credentials
+        "500":
+          description: Internal error
+      summary: Login user
+      tags:
+      - auth
+  /api/user/orders:
+    get:
+      description: Returns all orders for the authenticated user, sorted by upload
+        time (newest first)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handler.orderResponse'
+            type: array
+        "204":
+          description: No orders yet
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal error
+      security:
+      - CookieAuth: []
+      summary: Get orders
+      tags:
+      - orders
+    post:
+      consumes:
+      - text/plain
+      description: Submit a new order number (Luhn-validated). Requires auth cookie.
+      parameters:
+      - description: Order number (digits only)
+        in: body
+        name: number
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Already uploaded by this user
+        "202":
+          description: Accepted for processing
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "409":
+          description: Uploaded by another user
+        "422":
+          description: Invalid order number format
+        "500":
+          description: Internal error
+      security:
+      - CookieAuth: []
+      summary: Submit order
+      tags:
+      - orders
+  /api/user/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user and set an auth cookie on success
+      parameters:
+      - description: Credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.loginRequest'
+      responses:
+        "200":
+          description: Registered and authenticated
+        "400":
+          description: Bad request
+        "409":
+          description: Login already taken
+        "500":
+          description: Internal error
+      summary: Register user
+      tags:
+      - auth
+  /api/user/withdrawals:
+    get:
+      description: Returns all withdrawal records for the authenticated user, sorted
+        newest first
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handler.withdrawalResponse'
+            type: array
+        "204":
+          description: No withdrawals yet
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal error
+      security:
+      - CookieAuth: []
+      summary: Get withdrawals
+      tags:
+      - balance
+securityDefinitions:
+  CookieAuth:
+    in: cookie
+    name: loyalty_token
+    type: apiKey
+swagger: "2.0"
