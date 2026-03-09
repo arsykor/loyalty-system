@@ -370,6 +370,9 @@ func (h *Handler) handleGetWithdrawals(w http.ResponseWriter, r *http.Request) {
 // luhn validates an order number using the Luhn algorithm.
 // https://en.wikipedia.org/wiki/Luhn_algorithm
 func luhn(number string) bool {
+	if len(number) == 0 {
+		return false
+	}
 	sum := 0
 	nDigits := len(number)
 	parity := nDigits % 2
